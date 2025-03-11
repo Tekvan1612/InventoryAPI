@@ -76,6 +76,61 @@ def get_job_details(temp_id):
 
     return jsonify({'job': result, 'status': 1}), 200
 
+
+@app.route('/jobs/<int:temp_id>/<path:equipment_detail_id>', methods=['GET'])
+def get_equipment_details(temp_id, equipment_detail_id):
+    print(
+        f"Fetching equipment details for temp_id: {temp_id}, equipment_detail_id: {equipment_detail_id}")  # Debugging line
+    action = 'get_equipment_by_detail_id'  # New action for fetching equipment details
+    params = {'temp_id': temp_id, 'equipment_detail_id': equipment_detail_id}
+    result, response = call_postgresql_function(action, params)
+
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    if not result:
+        return jsonify({'message': 'Equipment details not found', 'status': 0}), 404
+
+    return jsonify({'equipment': result, 'status': 1}), 200
+
+@app.route('/jobs_for_venue_out', methods=['GET'])
+def get_jobs_for_venue_out():
+    action = 'get_jobs_for_venue_out'
+    result, response = call_postgresql_function(action, {})
+
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    return jsonify({'jobs': result, 'status': 1}), 200
+
+@app.route('/venue/<int:temp_id>', methods=['GET'])
+def get_job_details_for_venue(temp_id):
+    action = 'get_job_by_temp_id_with_details_for_venue'
+    params = {'temp_id': temp_id}
+    result, response = call_postgresql_function(action, params)
+
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    if not result:
+        return jsonify({'message': 'Job not found', 'status': 0}), 404
+
+    return jsonify({'job': result, 'status': 1}), 200
+
+@app.route('/title/<int:temp_id>', methods=['GET'])
+def get_job_details_for_scan_in(temp_id):
+    action = 'get_job_by_temp_id_with_details_for_scan_in'
+    params = {'temp_id': temp_id}
+    result, response = call_postgresql_function(action, params)
+
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    if not result:
+        return jsonify({'message': 'Job not found', 'status': 0}), 404
+
+    return jsonify({'job': result, 'status': 1}), 200
+
 @app.route('/scan_barcode', methods=['POST'])
 def scan_barcode():
     data = request.get_json()
@@ -91,6 +146,193 @@ def scan_barcode():
         return jsonify({'message': 'Details not found', 'status': 0}), 404
 
     return jsonify(result), 200
+
+@app.route('/venue_out', methods=['POST'])
+def venue_out():
+    data = request.get_json()
+    print(f"Received data: {data}")
+    action = 'venue_out'
+    result, response = call_postgresql_function(action, data)
+    print(f"Result from PostgreSQL function: {result}")
+
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    if not result:
+        return jsonify({'message': 'Details not found', 'status': 0}), 404
+
+    return jsonify(result), 200
+
+
+@app.route('/scan_in', methods=['POST'])
+def scan_in():
+    data = request.get_json()
+    print(f"Received data: {data}")
+    action = 'global_scanned_in'
+    result, response = call_postgresql_function(action, data)
+    print(f"Result from PostgreSQL function: {result}")
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    if not result:
+        return jsonify({'message': 'Details not found', 'status': 0}), 404
+
+    return jsonify(result), 200
+
+
+@app.route('/title', methods=['GET'])
+def get_title_delivery_challan():
+    action = 'get_title'
+    result, response = call_postgresql_function(action, {})
+
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    return jsonify({'jobs': result, 'status': 1}), 200
+
+
+@app.route('/title/<int:temp_id>/<path:equipment_detail_id>', methods=['GET'])
+def get_title_details_with_barcodes(temp_id, equipment_detail_id):
+    action = 'get_title_by_id'
+    params = {'temp_id': temp_id, 'equipment_detail_id': equipment_detail_id}
+    result, response = call_postgresql_function(action, params)
+
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    if not result:
+        return jsonify({'message': 'Job not found', 'status': 0}), 404
+
+    return jsonify({'job': result, 'status': 1}), 200
+
+
+@app.route('/scan_in_title', methods=['POST'])
+def scan_in_title():
+    data = request.get_json()
+    print(f"Received data: {data}")
+    action = 'insert_scanned_in'
+    result, response = call_postgresql_function(action, data)
+    print(f"Result from PostgreSQL function: {result}")
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    if not result:
+        return jsonify({'message': 'Details not found', 'status': 0}), 404
+
+    return jsonify(result), 200
+
+
+@app.route('/crew/<int:temp_id>', methods=['GET'])
+def get_crew_details(temp_id):
+    action = 'get_crew'
+    params = {'temp_id': temp_id}
+    result, response = call_postgresql_function(action, params)
+
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    if not result:
+        return jsonify({'message': 'Details not found', 'status': 0}), 404
+
+    return jsonify({'job': result, 'status': 1}), 200
+
+
+@app.route('/crew', methods=['GET'])
+def get_crew_details_with_id():
+    action = 'get_crew_with_id'
+    result, response = call_postgresql_function(action, {})
+
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    return jsonify({'jobs': result, 'status': 1}), 200
+
+
+@app.route('/venue/<int:temp_id>/<path:equipment_detail_id>', methods=['GET'])
+def get_details_for_venue_out_by_id(temp_id, equipment_detail_id):
+    action = 'get_details_for_venue_out_by_id'
+    params = {'temp_id': temp_id, 'equipment_detail_id': equipment_detail_id}
+    result, response = call_postgresql_function(action, params)
+
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    if not result:
+        return jsonify({'message': 'Job not found', 'status': 0}), 404
+
+    return jsonify({'job': result, 'status': 1}), 200
+
+
+@app.route('/reset_password', methods=['POST'])
+def reset_password():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    new_password = data.get('new_password')
+    retype_new_password = data.get('retype_new_password')
+
+    if not user_id or not new_password or not retype_new_password:
+        return jsonify({"message": "Missing parameters", "status": 0}), 400
+
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"message": "Database connection failed", "status": 0}), 500
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT password FROM user_master WHERE status = TRUE AND user_id = %s", (user_id,))
+        result = cursor.fetchone()
+
+        if not result:
+            return jsonify({"message": "User not found", "status": 0}), 404
+
+        current_password = result[0]
+
+        if new_password != retype_new_password:
+            return jsonify({"message": "Passwords do not match", "status": 0}), 400
+
+        if new_password == current_password:
+            return jsonify({"message": "Password already exists!!! Try a different password", "status": 0}), 400
+
+        cursor.execute("UPDATE user_master SET password = %s WHERE status = TRUE AND user_id = %s",
+                       (new_password, user_id))
+        conn.commit()
+
+        return jsonify({"message": "Password updated successfully", "status": 1}), 200
+    except Exception as e:
+        print(f"Error executing query: {e}")
+        return jsonify({"message": "An error occurred", "status": 0}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route('/employee', methods=['GET'])
+def get_employee_details():
+    action = 'get_employee'
+    result, response = call_postgresql_function(action, {})
+
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    if not result:
+        return jsonify({'message': 'Employee not found', 'status': 0}), 404
+
+    return jsonify({'Employee': result, 'status': 1}), 200
+
+
+@app.route('/employee/<int:user_id>', methods=['GET'])
+def get_employee_details_with_user_id(user_id):
+    action = 'get_employee_by_user_id'
+    params = {'user_id': user_id}
+    result, response = call_postgresql_function(action, params)
+
+    if response['status'] == 0:
+        return jsonify(response), 500
+
+    if not result:
+        return jsonify({'message': 'Employee not found', 'status': 0}), 404
+
+    return jsonify({'Employee': result, 'status': 1}), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
