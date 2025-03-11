@@ -135,10 +135,10 @@ def get_job_details_for_scan_in(temp_id):
 @app.route('/scan_barcode', methods=['POST'])
 def scan_barcode():
     data = request.get_json()
-    print(f"Received data: {data}")  
+    print(f"Received data: {data}")  # Log received data
     action = 'insert_scanned_info'
     result, response = call_postgresql_function(action, data)
-    print(f"Result from PostgreSQL function: {result}")  
+    print(f"Result from PostgreSQL function: {result}")  # Log PostgreSQL function result
 
     if response['status'] == 0:
         return jsonify(response), 500
@@ -147,6 +147,7 @@ def scan_barcode():
         return jsonify({'message': 'Details not found', 'status': 0}), 404
 
     return jsonify(result), 200
+
 
 @app.route('/venue_out', methods=['POST'])
 def venue_out():
