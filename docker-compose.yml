@@ -1,0 +1,18 @@
+version: '3.1'
+
+services:
+  web:
+    build: .
+    container_name: flask_app
+    command: flask run --host=0.0.0.0
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+      - DB_HOST=host.docker.internal
+      - DB_NAME=WMS2
+      - DB_USER=postgres
+      - DB_PASS=kvan
