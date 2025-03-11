@@ -1,6 +1,14 @@
 import os
+import psycopg2
 
-DB_HOST = os.getenv('DB_HOST', 'host.docker.internal')  # Use host.docker.internal to refer to the host machine
-DB_NAME = os.getenv('DB_NAME', 'wms')
-DB_USER = os.getenv('DB_USER', 'postgres')
-DB_PASS = os.getenv('DB_PASS', 'kvan')
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL is not set in environment variables!")
+
+# Connect to PostgreSQL
+try:
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    print("Database connection successful!")
+except Exception as e:
+    print(f"Error connecting to database: {e}")
