@@ -66,28 +66,15 @@ def get_jobs_delivery_challan():
 def get_job_details(temp_id):
     action = 'get_job_by_temp_id_with_details'
     params = {'temp_id': temp_id}
+    result, response = call_postgresql_function(action, params)
 
-    try:
-        result, error = call_postgresql_function(action, params)
-        
-        print("Result:", result)
-        print("Error:", error)
+    if response['status'] == 0:
+        return jsonify(response), 500
 
-        if error:
-            print("Database Error:", error)
-            return jsonify({'message': 'Internal server error', 'status': 0}), 500
+    if not result:
+        return jsonify({'message': 'Job not found', 'status': 0}), 404
 
-        if not result or result.get('status') != 1:
-            return jsonify({'message': 'Job not found', 'status': 0}), 404
-
-        return jsonify(result), 200
-    
-    except Exception as e:
-        print("Exception:", str(e))
-        return jsonify({'message': 'Internal server error', 'status': 0}), 500
-
-
-
+    return jsonify({'job': result, 'status': 1}), 200
 
 @app.route('/scan_barcode', methods=['POST'])
 def scan_barcode():
