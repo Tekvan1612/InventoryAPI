@@ -48,9 +48,10 @@ def login():
         return jsonify(response), 500
 
     if result and result['password'] == data.get('password'):
-        return jsonify({'message': 'Login successful', 'status': 1}), 200
+        return jsonify({'message': 'Login successful', 'status': 1, 'user_id': result.get('user_id')}), 200
     else:
         return jsonify({'message': 'Invalid credentials', 'status': 0}), 401
+
 
 @app.route('/jobs', methods=['GET'])
 def get_jobs_delivery_challan():
