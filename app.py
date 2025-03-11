@@ -67,12 +67,16 @@ def get_job_details(temp_id):
     action = 'get_job_by_temp_id_with_details'
     params = {'temp_id': temp_id}
     
-    result = call_postgresql_function(action, params)
+    result, error = call_postgresql_function(action, params)
 
-    if not result:
+    if error:
+        return jsonify({'message': 'Internal server error', 'status': 0}), 500
+
+    if not result or result.get('status') != 1:
         return jsonify({'message': 'Job not found', 'status': 0}), 404
     
     return jsonify(result), 200
+
 
 
 @app.route('/scan_barcode', methods=['POST'])
