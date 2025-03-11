@@ -62,10 +62,17 @@ def get_jobs_delivery_challan():
 
     return jsonify({'jobs': result, 'status': 1}), 200
 
-@app.route('/jobs/<int:job_id>', methods=['GET'])
-def get_job_by_id(job_id):
-    data = call_inventory_api('get_job_by_temp_id_with_details', {'temp_id': job_id})
-    return jsonify({'job': data, 'status': 1})
+@app.route('/jobs/<int:temp_id>', methods=['GET'])
+def get_job_details(temp_id):
+    action = 'get_job_by_temp_id_with_details'
+    params = {'temp_id': temp_id}
+    
+    result = call_postgresql_function(action, params)
+
+    if not result:
+        return jsonify({'message': 'Job not found', 'status': 0}), 404
+    
+    return jsonify(result), 200
 
 
 @app.route('/scan_barcode', methods=['POST'])
