@@ -148,7 +148,6 @@ def scan_barcode():
 
     return jsonify(result), 200
 
-
 @app.route('/venue_out', methods=['POST'])
 def venue_out():
     data = request.get_json()
