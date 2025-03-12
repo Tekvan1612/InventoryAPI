@@ -135,17 +135,27 @@ def get_job_details_for_scan_in(temp_id):
 @app.route('/scan_barcode', methods=['POST'])
 def scan_barcode():
     data = request.get_json()
-    try:
-        result = your_db_function_call(data)  # Call to the PostgreSQL function
-        print(f"DB Function Result: {result}")
-    except Exception as e:
-        print(f"Error during DB insert: {str(e)}")
-        return jsonify({'message': str(e), 'status': 0}), 500
+    print("Received data:", data)
 
-    if result.get('status') == 1:
-        return jsonify(result), 200
-    else:
-        return jsonify(result), 400
+    action = 'insert_scanned_info'
+    conn = psycopg2.connect(DATABASE_URL)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT inventory_api(%s, %s::jsonb)", (action, json.dumps(data)))
+        result = cursor.fetchone()[0]
+        conn.commit()  # Commit here explicitly
+        print("DB Response:", result)
+    except Exception as e:
+        conn.rollback()
+        print("Error during insert:", e)
+        return jsonify({'message': str(e), 'status': 0}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+    return jsonify(result), 200 if result['status'] == 1 else jsonify(result), 400
+
 
 
 @app.route('/venue_out', methods=['POST'])
