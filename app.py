@@ -135,18 +135,18 @@ def get_job_details_for_scan_in(temp_id):
 @app.route('/scan_barcode', methods=['POST'])
 def scan_barcode():
     data = request.get_json()
-    print(f"Received data: {data}")  # Log received data
-    action = 'insert_scanned_info'
-    result, response = call_postgresql_function(action, data)
-    print(f"Result from PostgreSQL function: {result}")  # Log PostgreSQL function result
+    try:
+        result = your_db_function_call(data)  # Call to the PostgreSQL function
+        print(f"DB Function Result: {result}")
+    except Exception as e:
+        print(f"Error during DB insert: {str(e)}")
+        return jsonify({'message': str(e), 'status': 0}), 500
 
-    if response['status'] == 0:
-        return jsonify(response), 500
+    if result.get('status') == 1:
+        return jsonify(result), 200
+    else:
+        return jsonify(result), 400
 
-    if not result:
-        return jsonify({'message': 'Details not found', 'status': 0}), 404
-
-    return jsonify(result), 200
 
 @app.route('/venue_out', methods=['POST'])
 def venue_out():
