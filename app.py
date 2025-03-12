@@ -174,9 +174,6 @@ def scan_barcode():
         print("Serialization Error:", serialization_error)
         return jsonify({'message': 'Serialization Error', 'error': str(serialization_error), 'status': 0}), 500
 
-
-
-
 @app.route('/venue_out', methods=['POST'])
 def venue_out():
     data = request.get_json()
