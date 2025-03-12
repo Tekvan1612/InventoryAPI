@@ -145,17 +145,18 @@ def scan_barcode():
     try:
         cursor.execute("SELECT inventory_api(%s, %s::jsonb)", (action, json.dumps(data)))
         result_row = cursor.fetchone()
-        conn.commit()  # Explicit commit
+        conn.commit()
         print("Raw DB Response:", result_row)
 
         if result_row:
             result = result_row[0]
-            
-            # FIX: Convert datetime explicitly to string for JSON serialization
-            if 'inserted_record' in result and 'scan_out_date_time' in result['inserted_record']:
-                datetime_obj = result['inserted_record']['scan_out_date_time']
-                if isinstance(datetime_obj, (datetime.datetime, datetime.date)):
-                    result['inserted_record']['scan_out_date_time'] = datetime_obj.isoformat()
+
+            # ✅ Fix: Ensure datetime is converted correctly
+            if 'inserted_record' in result and isinstance(result['inserted_record'], dict):
+                if 'scan_out_date_time' in result['inserted_record']:
+                    scan_time = result['inserted_record']['scan_out_date_time']
+                    if isinstance(scan_time, datetime):  
+                        result['inserted_record']['scan_out_date_time'] = scan_time.strftime('%Y-%m-%d %H:%M:%S')
 
     except Exception as e:
         conn.rollback()
@@ -166,7 +167,6 @@ def scan_barcode():
         cursor.close()
         conn.close()
 
-    # Now safely serialize the result
     return jsonify(result), 200 if result.get('status') == 1 else jsonify(result), 400
 
 @app.route('/venue_out', methods=['POST'])
