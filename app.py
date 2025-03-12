@@ -150,8 +150,9 @@ def scan_barcode():
 
         if result_row:
             result = result_row[0]
-
-            # ✅ Fix: Ensure datetime is converted correctly
+            print("Formatted Response:", result)  # Log output for debugging
+            
+            # 🟢 **Fix for Datetime Handling**
             if 'inserted_record' in result and isinstance(result['inserted_record'], dict):
                 if 'scan_out_date_time' in result['inserted_record']:
                     scan_time = result['inserted_record']['scan_out_date_time']
@@ -161,13 +162,14 @@ def scan_barcode():
     except Exception as e:
         conn.rollback()
         error_message = str(e)
-        print("Database Error:", error_message)
+        print("🚨 Database Error:", error_message)  # Log the actual error
         return jsonify({'message': 'Database Error', 'error': error_message, 'status': 0}), 500
     finally:
         cursor.close()
         conn.close()
 
-    return jsonify(result), 200 if result.get('status') == 1 else jsonify(result), 400
+    # ✅ **Fixed Return Statement**
+    return jsonify(result), 200 if result.get('status') == 1 else (jsonify(result), 400)
 
 @app.route('/venue_out', methods=['POST'])
 def venue_out():
