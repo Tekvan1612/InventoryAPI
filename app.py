@@ -138,7 +138,7 @@ def scan_barcode():
     print("Received data:", data)
 
     action = 'insert_scanned_info'
-    conn = get_db_connection()  # <-- use your existing method
+    conn = get_db_connection()
 
     if conn is None:
         return jsonify({'message': 'Database connection failed', 'status': 0}), 500
@@ -146,19 +146,34 @@ def scan_barcode():
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT inventory_api(%s, %s::jsonb)", (action, json.dumps(data)))
-        result = cursor.fetchone()[0]
+        result_row = cursor.fetchone()
+        
+        # Important: explicitly commit the transaction
         conn.commit()
-        print("DB Response:", result)
+        print("Raw DB Response:", result_row)
+
+        if result_row:
+            result = result_row[0]
+        else:
+            result = {'message': 'No response from DB function', 'status': 0}
+            return jsonify(result), 500
+
     except Exception as e:
         conn.rollback()
-        error_msg = str(e)
-        print("Error during DB Operation:", error_msg)
-        return jsonify({'message': 'Database Error', 'error': error_msg, 'status': 0}), 500
+        error_message = str(e)
+        print("Database Error:", error_message)
+        return jsonify({'message': 'Database Error', 'error': error_message, 'status': 0}), 500
     finally:
         cursor.close()
         conn.close()
 
-    return jsonify(result), 200 if result['status'] == 1 else jsonify(result), 400
+    # Important: Explicitly ensure the result is serializable to JSON
+    try:
+        return jsonify(result), 200 if result.get('status') == 1 else jsonify(result), 400
+    except Exception as serialization_error:
+        print("Serialization Error:", serialization_error)
+        return jsonify({'message': 'Serialization Error', 'error': str(serialization_error), 'status': 0}), 500
+
 
 
 
