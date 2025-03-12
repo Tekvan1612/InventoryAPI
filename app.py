@@ -138,18 +138,22 @@ def scan_barcode():
     print("Received data:", data)
 
     action = 'insert_scanned_info'
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor()
+    conn = get_db_connection()  # <-- use your existing method
+
+    if conn is None:
+        return jsonify({'message': 'Database connection failed', 'status': 0}), 500
 
     try:
+        cursor = conn.cursor()
         cursor.execute("SELECT inventory_api(%s, %s::jsonb)", (action, json.dumps(data)))
         result = cursor.fetchone()[0]
-        conn.commit()  # Commit here explicitly
+        conn.commit()
         print("DB Response:", result)
     except Exception as e:
         conn.rollback()
-        print("Error during insert:", e)
-        return jsonify({'message': str(e), 'status': 0}), 500
+        error_msg = str(e)
+        print("Error during DB Operation:", error_msg)
+        return jsonify({'message': 'Database Error', 'error': error_msg, 'status': 0}), 500
     finally:
         cursor.close()
         conn.close()
