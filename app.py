@@ -3,6 +3,7 @@ import psycopg2
 import json
 import os
 import urllib.parse as urlparse
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -139,24 +140,22 @@ def scan_barcode():
 
     action = 'insert_scanned_info'
     conn = get_db_connection()
-
-    if conn is None:
-        return jsonify({'message': 'Database connection failed', 'status': 0}), 500
+    cursor = conn.cursor()
 
     try:
-        cursor = conn.cursor()
         cursor.execute("SELECT inventory_api(%s, %s::jsonb)", (action, json.dumps(data)))
         result_row = cursor.fetchone()
-        
-        # Important: explicitly commit the transaction
-        conn.commit()
+        conn.commit()  # Explicit commit
         print("Raw DB Response:", result_row)
 
         if result_row:
             result = result_row[0]
-        else:
-            result = {'message': 'No response from DB function', 'status': 0}
-            return jsonify(result), 500
+            
+            # FIX: Convert datetime explicitly to string for JSON serialization
+            if 'inserted_record' in result and 'scan_out_date_time' in result['inserted_record']:
+                datetime_obj = result['inserted_record']['scan_out_date_time']
+                if isinstance(datetime_obj, (datetime.datetime, datetime.date)):
+                    result['inserted_record']['scan_out_date_time'] = datetime_obj.isoformat()
 
     except Exception as e:
         conn.rollback()
@@ -167,12 +166,8 @@ def scan_barcode():
         cursor.close()
         conn.close()
 
-    # Important: Explicitly ensure the result is serializable to JSON
-    try:
-        return jsonify(result), 200 if result.get('status') == 1 else jsonify(result), 400
-    except Exception as serialization_error:
-        print("Serialization Error:", serialization_error)
-        return jsonify({'message': 'Serialization Error', 'error': str(serialization_error), 'status': 0}), 500
+    # Now safely serialize the result
+    return jsonify(result), 200 if result.get('status') == 1 else jsonify(result), 400
 
 @app.route('/venue_out', methods=['POST'])
 def venue_out():
