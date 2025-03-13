@@ -174,38 +174,21 @@ def scan_barcode():
 @app.route('/venue_out', methods=['POST'])
 def venue_out():
     data = request.get_json()
-    print(f"📥 Received data: {data}")  # Debug input data
+    print(f"📥 Received data: {data}")  # Debugging
 
     action = 'venue_out'
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor()
+    result, response = call_postgresql_function(action, data)
 
-    try:
-        # Call PostgreSQL function
-        cursor.execute("SELECT inventory_api(%s, %s::jsonb)", (action, json.dumps(data)))
-        result = cursor.fetchone()[0]
-        conn.commit()  # Explicitly commit the transaction
-        print(f"✅ DB Response: {result}")  # Debugging output
+    print(f"🛠️ Result from PostgreSQL function: {result}")  # Debugging
+    print(f"📢 Response: {response}")  # Debugging
 
-        # Check if function updated the record
-        cursor.execute("""
-            SELECT venue_out, venue_out_date, venue_out_by 
-            FROM public.transaction_details 
-            WHERE barcode = %s
-        """, (data["barcode"],))
-        updated_record = cursor.fetchone()
-        print(f"🔍 After UPDATE: {updated_record}")  # Log the updated record
+    if response['status'] == 0:
+        return jsonify(response), 500
 
-    except Exception as e:
-        conn.rollback()
-        print(f"❌ Error in venue_out: {e}")  # Debugging error
-        return jsonify({'message': str(e), 'status': 0}), 500
-    finally:
-        cursor.close()
-        conn.close()
+    if not result:
+        return jsonify({'message': 'Details not found', 'status': 0}), 404
 
-    return jsonify(result), 200 if result['status'] == 1 else jsonify(result), 400
-
+    return jsonify(result), 200
 
 @app.route('/scan_in', methods=['POST'])
 def scan_in():
