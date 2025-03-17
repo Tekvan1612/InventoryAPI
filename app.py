@@ -218,17 +218,40 @@ def venue_out():
 @app.route('/scan_in', methods=['POST'])
 def scan_in():
     data = request.get_json()
-    print(f"Received data: {data}")
+    print("Received data:", data)
+
     action = 'global_scanned_in'
-    result, response = call_postgresql_function(action, data)
-    print(f"Result from PostgreSQL function: {result}")
-    if response['status'] == 0:
-        return jsonify(response), 500
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-    if not result:
-        return jsonify({'message': 'Details not found', 'status': 0}), 404
+    try:
+        cursor.execute("SELECT inventory_api(%s, %s::jsonb)", (action, json.dumps(data)))
+        result_row = cursor.fetchone()
+        conn.commit()
+        print("Raw DB Response:", result_row)
 
-    return jsonify(result), 200
+        if result_row:
+            result = result_row[0]
+            print("Formatted Response:", result)  # Debug log
+
+            # 🟢 **Fix for Datetime Handling**
+            if 'inserted_record' in result and isinstance(result['inserted_record'], dict):
+                if 'scan_in_date_time' in result['inserted_record']:
+                    global_scan_time = result['inserted_record']['scan_in_date_time']
+                    if isinstance(global_scan_time, datetime):  
+                        result['inserted_record']['scan_in_date_time'] = global_scan_time.strftime('%Y-%m-%d %H:%M:%S')
+
+    except Exception as e:
+        conn.rollback()
+        error_message = str(e)
+        print("🚨 Database Error:", error_message)  # Debug log
+        return jsonify({'message': 'Database Error', 'error': error_message, 'status': 0}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+    # ✅ **Fixed Return Statement**
+    return jsonify(result), 200 if result.get('status') == 1 else (jsonify(result), 400)
 
 
 @app.route('/title', methods=['GET'])
@@ -260,36 +283,40 @@ def get_title_details_with_barcodes(temp_id, equipment_detail_id):
 @app.route('/scan_in_title', methods=['POST'])
 def scan_in_title():
     data = request.get_json()
-    print(f"Received data: {data}")
-    action = 'insert_scanned_in'
+    print("Received data:", data)
 
+    action = 'insert_scanned_in'
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        result, response = call_postgresql_function(action, data)
-        print(f"Result from PostgreSQL function: {result}")
-
-        if response['status'] == 0:
-            conn.rollback()
-            return jsonify(response), 500
-
-        if not result:
-            conn.rollback()
-            return jsonify({'message': 'Details not found', 'status': 0}), 404
-
+        cursor.execute("SELECT inventory_api(%s, %s::jsonb)", (action, json.dumps(data)))
+        result_row = cursor.fetchone()
         conn.commit()
-        return jsonify(result), 200
+        print("Raw DB Response:", result_row)
+
+        if result_row:
+            result = result_row[0]
+            print("Formatted Response:", result)  # Debug log
+
+            # 🟢 **Fix for Datetime Handling**
+            if 'inserted_record' in result and isinstance(result['inserted_record'], dict):
+                if 'scan_in_date_time' in result['inserted_record']:
+                    scan_in_time = result['inserted_record']['scan_in_date_time']
+                    if isinstance(scan_in_time, datetime):  
+                        result['inserted_record']['scan_in_date_time'] = scan_in_time.strftime('%Y-%m-%d %H:%M:%S')
 
     except Exception as e:
         conn.rollback()
         error_message = str(e)
-        print(f"Database Error: {error_message}")
+        print("🚨 Database Error:", error_message)  # Debug log
         return jsonify({'message': 'Database Error', 'error': error_message, 'status': 0}), 500
-
     finally:
         cursor.close()
         conn.close()
+
+    # ✅ **Fixed Return Statement**
+    return jsonify(result), 200 if result.get('status') == 1 else (jsonify(result), 400)
 
 
 @app.route('/crew/<int:temp_id>', methods=['GET'])
