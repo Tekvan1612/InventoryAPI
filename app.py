@@ -133,26 +133,31 @@ def get_job_details_for_scan_in(temp_id):
 
     return jsonify({'job': result, 'status': 1}), 200
 
+
 @app.route('/scan_barcode', methods=['POST'])
 def scan_barcode():
     data = request.get_json()
     print("Received data:", data)
 
     action = 'insert_scanned_info'
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    conn = None
+    cursor = None
 
     try:
-        cursor.execute("SELECT inventory_api(%s, %s::jsonb)", (action, json.dumps(data)))
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT inventory_api(%s, %s::jsonb)", (action, json.dumps(data, default=str)))
         result_row = cursor.fetchone()
         conn.commit()
+
         print("Raw DB Response:", result_row)
 
         if result_row:
             result = result_row[0]
-            print("Formatted Response:", result)  # Log output for debugging
-            
-            # 🟢 **Fix for Datetime Handling**
+            print("Formatted Response:", json.dumps(result, default=str))
+
+            # Fix datetime conversion issue
             if 'inserted_record' in result and isinstance(result['inserted_record'], dict):
                 if 'scan_out_date_time' in result['inserted_record']:
                     scan_time = result['inserted_record']['scan_out_date_time']
@@ -160,16 +165,22 @@ def scan_barcode():
                         result['inserted_record']['scan_out_date_time'] = scan_time.strftime('%Y-%m-%d %H:%M:%S')
 
     except Exception as e:
-        conn.rollback()
+        if conn:
+            conn.rollback()
         error_message = str(e)
-        print("🚨 Database Error:", error_message)  # Log the actual error
+        print("🚨 Database Error:", error_message)
         return jsonify({'message': 'Database Error', 'error': error_message, 'status': 0}), 500
-    finally:
-        cursor.close()
-        conn.close()
 
-    # ✅ **Fixed Return Statement**
-    return jsonify(result), 200 if result.get('status') == 1 else (jsonify(result), 400)
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    # Fix return statement
+    status_code = 200 if result.get('status') == 1 else 400
+    return jsonify(result), status_code
+
 
 @app.route('/venue_out', methods=['POST'])
 def venue_out():
