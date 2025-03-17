@@ -140,22 +140,18 @@ def scan_barcode():
     print("Received data:", data)
 
     action = 'insert_scanned_info'
-    conn = None
-    cursor = None
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        cursor.execute("SELECT inventory_api(%s, %s::jsonb)", (action, json.dumps(data, default=str)))
+        cursor.execute("SELECT inventory_api(%s, %s::jsonb)", (action, json.dumps(data)))
         result_row = cursor.fetchone()
         conn.commit()
-
         print("Raw DB Response:", result_row)
 
         if result_row:
             result = result_row[0]
-            print("Formatted Response:", json.dumps(result, default=str))
+            print("Formatted Response:", result)
 
             # Fix datetime conversion issue
             if 'inserted_record' in result and isinstance(result['inserted_record'], dict):
@@ -166,17 +162,13 @@ def scan_barcode():
                     elif isinstance(scan_time, str):  
                         result['inserted_record']['scan_out_date_time'] = scan_time  # Already formatted    
     except Exception as e:
-        if conn:
-            conn.rollback()
+        conn.rollback()
         error_message = str(e)
         print("🚨 Database Error:", error_message)
         return jsonify({'message': 'Database Error', 'error': error_message, 'status': 0}), 500
-
     finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        cursor.close()
+        conn.close()
 
     # Fix return statement
     status_code = 200 if result.get('status') == 1 else 400
