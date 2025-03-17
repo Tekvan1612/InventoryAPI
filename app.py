@@ -170,10 +170,10 @@ def scan_barcode():
         conn.close()
 
     # ✅ **Fixed Return Statement**
-    if not result:
-        return jsonify({'message': 'scan barcode not found', 'status': 0}), 404
+    if not result or (isinstance(result, dict) and result.get('status', 0) == 0):
+        return jsonify({'message': result.get('message', 'Scan barcode not found'), 'status': 0}), 400
 
-    return jsonify({'job': result, 'status': 1}), 200
+    return jsonify(result), 200  # If status = 1, return success
 
 
 @app.route('/venue_out', methods=['POST'])
