@@ -177,6 +177,11 @@ def venue_out():
     print("📥 Received data:", data)  # Debugging
 
     action = 'venue_out'
+    
+    # Ensure `user_id` is included in the request payload
+    if 'user_id' not in data:
+        return jsonify({'message': 'User ID is required', 'status': 0}), 400
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -189,12 +194,12 @@ def venue_out():
         if result_row:
             result = result_row[0]
             print("📢 Formatted Response:", result)  # Debugging
-            
+
             # 🟢 Fix for Datetime Handling
             if 'inserted_record' in result and isinstance(result['inserted_record'], dict):
                 if 'venue_out_date' in result['inserted_record']:
                     venue_time = result['inserted_record']['venue_out_date']
-                    if isinstance(venue_time, datetime):  
+                    if isinstance(venue_time, datetime):
                         result['inserted_record']['venue_out_date'] = venue_time.strftime('%Y-%m-%d %H:%M:%S')
 
     except Exception as e:
