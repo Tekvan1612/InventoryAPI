@@ -163,7 +163,8 @@ def scan_barcode():
                     scan_time = result['inserted_record']['scan_out_date_time']
                     if isinstance(scan_time, datetime):  
                         result['inserted_record']['scan_out_date_time'] = scan_time.strftime('%Y-%m-%d %H:%M:%S')
-
+                    elif isinstance(scan_time, str):  
+                        result['inserted_record']['scan_out_date_time'] = scan_time  # Already formatted    
     except Exception as e:
         if conn:
             conn.rollback()
@@ -207,12 +208,13 @@ def venue_out():
             print("📢 Formatted Response:", result)  # Debugging
 
             # 🟢 Fix for Datetime Handling
-            if 'inserted_record' in result and isinstance(result['inserted_record'], dict):
-                if 'venue_out_date' in result['inserted_record']:
-                    venue_time = result['inserted_record']['venue_out_date']
+            if 'inserted_record_venue' in result and isinstance(result['inserted_record_venue'], dict):
+                if 'venue_out_date' in result['inserted_record_venue']:
+                    venue_time = result['inserted_record_venue']['venue_out_date']
                     if isinstance(venue_time, datetime):
-                        result['inserted_record']['venue_out_date'] = venue_time.strftime('%Y-%m-%d %H:%M:%S')
-
+                        result['inserted_record_venue']['venue_out_date'] = venue_time.strftime('%Y-%m-%d %H:%M:%S')
+                    elif isinstance(venue_time, str):  
+                        result['inserted_record_venue']['venue_out_date'] = venue_time  # Already formatted
     except Exception as e:
         conn.rollback()
         error_message = str(e)
@@ -223,7 +225,8 @@ def venue_out():
         conn.close()
 
     # ✅ Fixed Return Statement
-    return jsonify(result), 200 if result.get('status') == 1 else (jsonify(result), 400)
+    status_code = 200 if result.get('status') == 1 else 400
+    return jsonify(result), status_code
 
 
 @app.route('/scan_in', methods=['POST'])
@@ -246,12 +249,13 @@ def scan_in():
             print("Formatted Response:", result)  # Debug log
 
             # 🟢 **Fix for Datetime Handling**
-            if 'inserted_record' in result and isinstance(result['inserted_record'], dict):
-                if 'scan_in_date_time' in result['inserted_record']:
-                    global_scan_time = result['inserted_record']['scan_in_date_time']
+            if 'inserted_record_global' in result and isinstance(result['inserted_record_global'], dict):
+                if 'scan_in_date_time' in result['inserted_record_global']:
+                    global_scan_time = result['inserted_record_global']['scan_in_date_time']
                     if isinstance(global_scan_time, datetime):  
-                        result['inserted_record']['scan_in_date_time'] = global_scan_time.strftime('%Y-%m-%d %H:%M:%S')
-
+                        result['inserted_record_global']['scan_in_date_time'] = global_scan_time.strftime('%Y-%m-%d %H:%M:%S')
+                    elif isinstance(global_scan_time, str):  
+                        result['inserted_record_global']['scan_in_date_time'] = global_scan_time  # Already formatted
     except Exception as e:
         conn.rollback()
         error_message = str(e)
@@ -262,7 +266,8 @@ def scan_in():
         conn.close()
 
     # ✅ **Fixed Return Statement**
-    return jsonify(result), 200 if result.get('status') == 1 else (jsonify(result), 400)
+    status_code = 200 if result.get('status') == 1 else 400
+    return jsonify(result), status_code
 
 
 @app.route('/title', methods=['GET'])
@@ -311,12 +316,13 @@ def scan_in_title():
             print("Formatted Response:", result)  # Debug log
 
             # 🟢 **Fix for Datetime Handling**
-            if 'inserted_record' in result and isinstance(result['inserted_record'], dict):
-                if 'scan_in_date_time' in result['inserted_record']:
-                    scan_in_time = result['inserted_record']['scan_in_date_time']
+            if 'inserted_record_scan' in result and isinstance(result['inserted_record_scan'], dict):
+                if 'scan_in_date_time' in result['inserted_record_scan']:
+                    scan_in_time = result['inserted_record_scan']['scan_in_date_time']
                     if isinstance(scan_in_time, datetime):  
-                        result['inserted_record']['scan_in_date_time'] = scan_in_time.strftime('%Y-%m-%d %H:%M:%S')
-
+                        result['inserted_record_scan']['scan_in_date_time'] = scan_in_time.strftime('%Y-%m-%d %H:%M:%S')
+                    elif isinstance(scan_in_time, str):  
+                        result['inserted_record_scan']['scan_in_date_time'] = scan_in_time  # Already formatted
     except Exception as e:
         conn.rollback()
         error_message = str(e)
@@ -327,7 +333,8 @@ def scan_in_title():
         conn.close()
 
     # ✅ **Fixed Return Statement**
-    return jsonify(result), 200 if result.get('status') == 1 else (jsonify(result), 400)
+    status_code = 200 if result.get('status') == 1 else 400
+    return jsonify(result), status_code
 
 
 @app.route('/crew/<int:temp_id>', methods=['GET'])
