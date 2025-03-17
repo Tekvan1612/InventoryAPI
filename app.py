@@ -151,28 +151,26 @@ def scan_barcode():
 
         if result_row:
             result = result_row[0]
-            print("Formatted Response:", result)
+            print("Formatted Response:", result)  # Log output for debugging
+            
+            # 🟢 **Fix for Datetime Handling**
+            if 'inserted_record' in result and isinstance(result['inserted_record'], dict):
+                if 'scan_out_date_time' in result['inserted_record']:
+                    scan_time = result['inserted_record']['scan_out_date_time']
+                    if isinstance(scan_time, datetime):  
+                        result['inserted_record']['scan_out_date_time'] = scan_time.strftime('%Y-%m-%d %H:%M:%S')
 
-            # Fix datetime conversion issue
-            if 'inserted_record_barcode' in result and isinstance(result['inserted_record_barcode'], dict):
-                if 'scan_out_date_time' in result['inserted_record_barcode']:
-                    scan_out_time = result['inserted_record_barcode']['scan_out_date_time']
-                    if isinstance(scan_out_time, datetime):  
-                        result['inserted_record_barcode']['scan_out_date_time'] = scan_out_time.strftime('%Y-%m-%d %H:%M:%S')
-                    elif isinstance(scan_out_time, str):  
-                        result['inserted_record_barcode']['scan_out_date_time'] = scan_out_time  # Already formatted    
     except Exception as e:
         conn.rollback()
         error_message = str(e)
-        print("🚨 Database Error:", error_message)
+        print("🚨 Database Error:", error_message)  # Log the actual error
         return jsonify({'message': 'Database Error', 'error': error_message, 'status': 0}), 500
     finally:
         cursor.close()
         conn.close()
 
-    # Fix return statement
-    status_code = 200 if result.get('status') == 1 else 400
-    return jsonify(result), status_code
+    # ✅ **Fixed Return Statement**
+    return jsonify(result), 200 if result.get('status') == 1 else (jsonify(result), 400)
 
 
 @app.route('/venue_out', methods=['POST'])
