@@ -171,7 +171,7 @@ def scan_barcode():
 
     # ✅ **Fixed Return Statement**
     if not result:
-        return jsonify({'message': 'Job not found', 'status': 0}), 404
+        return jsonify({'message': 'scan barcode not found', 'status': 0}), 404
 
     return jsonify({'job': result, 'status': 1}), 200
 
