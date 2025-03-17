@@ -137,35 +137,52 @@ def get_job_details_for_scan_in(temp_id):
 @app.route('/scan_barcode', methods=['POST'])
 def scan_barcode():
     data = request.get_json()
-    print("Received data:", data)
+    print("📥 Received Data:", data)
 
     action = 'insert_scanned_info'
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
+        # Call the inventory_api function in PostgreSQL
         cursor.execute("SELECT inventory_api(%s, %s::jsonb)", (action, json.dumps(data)))
         result_row = cursor.fetchone()
         conn.commit()
-        print("Raw DB Response:", result_row)
 
         if result_row:
             result = result_row[0]
-            print("Formatted Response:", result)
+            print("✅ Raw DB Response:", result)
 
-            # Fix datetime conversion issue
-            if 'inserted_record' in result and isinstance(result['inserted_record'], dict):
-                if 'scan_out_date_time' in result['inserted_record']:
-                    scan_time = result['inserted_record']['scan_out_date_time']
+            # Ensure scan_out_date_time is properly formatted
+            if isinstance(result, dict) and 'inserted_record' in result:
+                inserted_record = result.get('inserted_record', {})
+                
+                if 'scan_out_date_time' in inserted_record:
+                    scan_time = inserted_record['scan_out_date_time']
+                    
                     if isinstance(scan_time, datetime):  
-                        result['inserted_record']['scan_out_date_time'] = scan_time.strftime('%Y-%m-%d %H:%M:%S')
-                    elif isinstance(scan_time, str):  
-                        result['inserted_record']['scan_out_date_time'] = scan_time  # Already formatted    
+                        inserted_record['scan_out_date_time'] = scan_time.strftime('%Y-%m-%d %H:%M:%S')
+                    elif isinstance(scan_time, str):
+                        # Ensure valid datetime format
+                        try:
+                            parsed_time = datetime.strptime(scan_time, '%d-%m-%Y %H:%M:%S')
+                            inserted_record['scan_out_date_time'] = parsed_time.strftime('%Y-%m-%d %H:%M:%S')
+                        except ValueError:
+                            print("⚠️ Invalid datetime format received:", scan_time)
+                            inserted_record['scan_out_date_time'] = "Invalid Date Format"
+                    
+                result['inserted_record'] = inserted_record
+            
+            # Determine response status
+            status_code = 200 if result.get('status') == 1 else 400
+            return jsonify(result), status_code
+
     except Exception as e:
         conn.rollback()
         error_message = str(e)
         print("🚨 Database Error:", error_message)
         return jsonify({'message': 'Database Error', 'error': error_message, 'status': 0}), 500
+
     finally:
         cursor.close()
         conn.close()
