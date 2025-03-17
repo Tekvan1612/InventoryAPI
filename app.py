@@ -262,15 +262,34 @@ def scan_in_title():
     data = request.get_json()
     print(f"Received data: {data}")
     action = 'insert_scanned_in'
-    result, response = call_postgresql_function(action, data)
-    print(f"Result from PostgreSQL function: {result}")
-    if response['status'] == 0:
-        return jsonify(response), 500
 
-    if not result:
-        return jsonify({'message': 'Details not found', 'status': 0}), 404
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-    return jsonify(result), 200
+    try:
+        result, response = call_postgresql_function(action, data)
+        print(f"Result from PostgreSQL function: {result}")
+
+        if response['status'] == 0:
+            conn.rollback()
+            return jsonify(response), 500
+
+        if not result:
+            conn.rollback()
+            return jsonify({'message': 'Details not found', 'status': 0}), 404
+
+        conn.commit()
+        return jsonify(result), 200
+
+    except Exception as e:
+        conn.rollback()
+        error_message = str(e)
+        print(f"Database Error: {error_message}")
+        return jsonify({'message': 'Database Error', 'error': error_message, 'status': 0}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
 
 
 @app.route('/crew/<int:temp_id>', methods=['GET'])
