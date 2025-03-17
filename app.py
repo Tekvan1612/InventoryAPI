@@ -187,10 +187,6 @@ def scan_barcode():
         cursor.close()
         conn.close()
 
-    # Fix return statement
-    status_code = 200 if result.get('status') == 1 else 400
-    return jsonify(result), status_code
-
 
 @app.route('/venue_out', methods=['POST'])
 def venue_out():
